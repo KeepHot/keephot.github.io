@@ -5,7 +5,7 @@
   
 
 
-<html class="theme-next gemini use-motion" lang="en">
+<html class="theme-next gemini use-motion" lang="zh-Hans">
 <head>
   <meta charset="UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -83,9 +83,8 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="Mysql中的事务日志——redo日志">
 <meta property="og:url" content="http://yoursite.com/2019/06/09/Mysql%E7%9A%84%E4%BA%8B%E5%8A%A1/Mysql%E6%8A%80%E6%9C%AF%E5%86%85%E5%B9%95-%E4%BA%8B%E5%8A%A1%E6%97%A5%E5%BF%97(%E4%B8%80)/index.html">
-<meta property="og:site_name" content="Hexo">
+<meta property="og:site_name" content="Billy&#39;s Blog">
 <meta property="og:description" content="&lt;Excerpt in index | 首页摘要&gt;  本文主要讲解了Mysql的InnoDB引擎的事务的基础知识，以及redo日志的结构与实现，日志的特点，。本文参考资料见文末">
-<meta property="og:locale" content="en_US">
 <meta property="og:image" content="https://i.loli.net/2019/07/06/5d20aa1226b4f44878.jpg">
 <meta property="og:image" content="https://i.loli.net/2019/07/06/5d20aaca8c5fa54147.jpg">
 <meta property="og:image" content="https://i.loli.net/2019/07/06/5d20ab013c46869134.jpg">
@@ -95,7 +94,7 @@
 <meta property="og:image" content="https://i.loli.net/2019/07/06/5d20ab971aea464730.jpg">
 <meta property="article:published_time" content="2019-06-08T16:00:00.000Z">
 <meta property="article:modified_time" content="2019-07-06T14:34:18.172Z">
-<meta property="article:author" content="John Doe">
+<meta property="article:author" content="Billy">
 <meta property="article:tag" content="redo日志">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://i.loli.net/2019/07/06/5d20aa1226b4f44878.jpg">
@@ -114,7 +113,7 @@
     motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
     duoshuo: {
       userId: '0',
-      author: 'Author'
+      author: '博主'
     },
     algolia: {
       applicationID: '',
@@ -134,7 +133,7 @@
 
 
 
-  <title>Mysql中的事务日志——redo日志 | Hexo</title>
+  <title>Mysql中的事务日志——redo日志 | Billy's Blog</title>
   
 
 
@@ -146,7 +145,7 @@
 
 <meta name="generator" content="Hexo 4.2.1"></head>
 
-<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
 
   
   
@@ -164,12 +163,12 @@
     <div class="custom-logo-site-title">
       <a href="/"  class="brand" rel="start">
         <span class="logo-line-before"><i></i></span>
-        <span class="site-title">Hexo</span>
+        <span class="site-title">Billy's Blog</span>
         <span class="logo-line-after"><i></i></span>
       </a>
     </div>
       
-        <p class="site-subtitle"></p>
+        <p class="site-subtitle">仰望星空，脚踏实地</p>
       
   </div>
 
@@ -194,7 +193,7 @@
             
               <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
             
-            Home
+            首页
           </a>
         </li>
       
@@ -204,7 +203,7 @@
             
               <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
             
-            Tags
+            标签
           </a>
         </li>
       
@@ -214,7 +213,7 @@
             
               <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
             
-            Categories
+            分类
           </a>
         </li>
       
@@ -224,7 +223,7 @@
             
               <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
             
-            Archives
+            归档
           </a>
         </li>
       
@@ -264,13 +263,13 @@
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/06/09/Mysql%E7%9A%84%E4%BA%8B%E5%8A%A1/Mysql%E6%8A%80%E6%9C%AF%E5%86%85%E5%B9%95-%E4%BA%8B%E5%8A%A1%E6%97%A5%E5%BF%97(%E4%B8%80)/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="John Doe">
+      <meta itemprop="name" content="Billy">
       <meta itemprop="description" content="">
       <meta itemprop="image" content="/images/avatar.png">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hexo">
+      <meta itemprop="name" content="Billy's Blog">
     </span>
 
     
@@ -288,9 +287,9 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               
-                <span class="post-meta-item-text">Posted on</span>
+                <span class="post-meta-item-text">发表于</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-06-09T00:00:00+08:00">
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-06-09T00:00:00+08:00">
                 2019-06-09
               </time>
             
@@ -309,7 +308,7 @@
                 <i class="fa fa-folder-o"></i>
               </span>
               
-                <span class="post-meta-item-text">In</span>
+                <span class="post-meta-item-text">分类于</span>
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
@@ -341,9 +340,9 @@
                   <i class="fa fa-file-word-o"></i>
                 </span>
                 
-                  <span class="post-meta-item-text">Words count in article&#58;</span>
+                  <span class="post-meta-item-text">字数统计&#58;</span>
                 
-                <span title="Words count in article ">
+                <span title="字数统计 ">
                    字
                 </span>
               
@@ -357,9 +356,9 @@
                   <i class="fa fa-clock-o"></i>
                 </span>
                 
-                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
                 
-                <span title="Reading time">
+                <span title="阅读时长">
                    分钟
                 </span>
               
@@ -549,10 +548,10 @@
       
         <ul class="sidebar-nav motion-element">
           <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            Table of Contents
+            文章目录
           </li>
           <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            Overview
+            站点概览
           </li>
         </ul>
       
@@ -563,9 +562,9 @@
             
               <img class="site-author-image" itemprop="image"
                 src="/images/avatar.png"
-                alt="John Doe" />
+                alt="Billy" />
             
-              <p class="site-author-name" itemprop="name">John Doe</p>
+              <p class="site-author-name" itemprop="name">Billy</p>
               <p class="site-description motion-element" itemprop="description"></p>
           </div>
 
@@ -577,7 +576,7 @@
                 <a href="/archives/%20%7C%7C%20archive">
               
                   <span class="site-state-item-count">27</span>
-                  <span class="site-state-item-name">posts</span>
+                  <span class="site-state-item-name">日志</span>
                 </a>
               </div>
             
@@ -588,7 +587,7 @@
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
                   <span class="site-state-item-count">4</span>
-                  <span class="site-state-item-name">categories</span>
+                  <span class="site-state-item-name">分类</span>
                 </a>
               </div>
             
@@ -599,7 +598,7 @@
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
                   <span class="site-state-item-count">21</span>
-                  <span class="site-state-item-name">tags</span>
+                  <span class="site-state-item-name">标签</span>
                 </a>
               </div>
             
@@ -721,13 +720,13 @@
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">John Doe</span>
+  <span class="author" itemprop="copyrightHolder">Billy</span>
 
   
 </div>
 
 
-  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
 
 
 
@@ -735,7 +734,7 @@
 
 
 
-  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
 
 
 
