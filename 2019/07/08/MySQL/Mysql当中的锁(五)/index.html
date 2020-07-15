@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="锁的算法,幻读," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="​    本文简单地讲解了Record Lock,Gap Lock,Next-Key Lock，以及不同索引情况下的Next-Key Lock，分析了幻读问题的产生，以及如何关闭Gap Lock，还有插入记录时检查下一条的情况。本文参考资料见文末">
+<meta property="og:type" content="article">
+<meta property="og:title" content="InnoDB引擎当中的锁 —— 锁的几种算法与幻读">
+<meta property="og:url" content="http://yoursite.com/2019/07/08/MySQL/Mysql%E5%BD%93%E4%B8%AD%E7%9A%84%E9%94%81(%E4%BA%94)/index.html">
+<meta property="og:site_name" content="Billy&#39;s Blog">
+<meta property="og:description" content="​    本文简单地讲解了Record Lock,Gap Lock,Next-Key Lock，以及不同索引情况下的Next-Key Lock，分析了幻读问题的产生，以及如何关闭Gap Lock，还有插入记录时检查下一条的情况。本文参考资料见文末">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/623378-bddee480df2fe659.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/620/format/webp">
+<meta property="og:image" content="https://img-blog.csdn.net/20181017083923352?watermark/2/text/aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3h1bnphb3NpeWVjYW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70">
+<meta property="article:published_time" content="2019-07-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-07-15T07:20:02.692Z">
+<meta property="article:author" content="Billy">
+<meta property="article:tag" content="锁的算法">
+<meta property="article:tag" content="幻读">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://upload-images.jianshu.io/upload_images/623378-bddee480df2fe659.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/620/format/webp">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/07/08/MySQL/Mysql当中的锁(五)/"/>
+
+
+
+
+
+  <title>InnoDB引擎当中的锁 —— 锁的几种算法与幻读 | Billy's Blog</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Billy's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">仰望星空，脚踏实地</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/home%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20/%E9%A6%96%E9%A1%B5" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-question-circle"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags%20" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags                       //标签"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories%20" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th             //分类"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/%20" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive           //归档"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/07/08/MySQL/Mysql%E5%BD%93%E4%B8%AD%E7%9A%84%E9%94%81(%E4%BA%94)/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Billy">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Billy's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">InnoDB引擎当中的锁 —— 锁的几种算法与幻读</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-07-08T00:00:00+08:00">
+                2019-07-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Mysql/" itemprop="url" rel="index">
+                    <span itemprop="name">Mysql</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-wordcount">
+              
+                
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">字数统计&#58;</span>
+                
+                <span title="字数统计 ">
+                   字
+                </span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
+                
+                <span title="阅读时长">
+                   分钟
+                </span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>​    本文简单地讲解了<strong>Record Lock,Gap Lock,Next-Key Lock，以及不同索引情况下的Next-Key Lock，分析了幻读问题的产生，以及如何关闭Gap Lock，还有插入记录时检查下一条的情况</strong>。本文参考资料见文末</p>
+<a id="more"></a>
+<p>&lt;The rest of contents | 余下全文&gt;</p>
+<h3 id="InnoDB引擎下的三种行锁算法"><a href="#InnoDB引擎下的三种行锁算法" class="headerlink" title="InnoDB引擎下的三种行锁算法"></a>InnoDB引擎下的三种行锁算法</h3><h4 id="Record-Locks"><a href="#Record-Locks" class="headerlink" title="Record Locks"></a>Record Locks</h4><p>​    <strong>单个行记录上的锁，Record Lock总是会锁住索引记录</strong>，如果InnoDB存储引擎表在建立的时候没有设置任何一个索引，那么这是InnoDB存储引擎会使用隐式的主键来进行锁定。</p>
+<h4 id="Gap-Lock"><a href="#Gap-Lock" class="headerlink" title="Gap Lock"></a>Gap Lock</h4><p>​    <strong>间隙锁，锁定一个范围，但不包含记录本身</strong>。</p>
+<h4 id="Next-Key-Lock"><a href="#Next-Key-Lock" class="headerlink" title="Next-Key Lock"></a>Next-Key Lock</h4><p>​    是结合Gap Lock和Record Lockd 一种锁定算法，<strong>在Nex-Key Lock算法下，InnoDB对于行的查询都是采用这种锁定算法</strong></p>
+<h4 id="举一个栗之🌰"><a href="#举一个栗之🌰" class="headerlink" title="举一个栗之🌰"></a>举一个栗之🌰</h4><p>​    例如一个索引有10,11,13,20这四个值。InnoDB可以根据需要使用</p>
+<ol>
+<li><strong>Record Lock将10，11，13，20四个索引锁住</strong></li>
+<li><strong>Gap Lock将 (-∞,10)，(10,11)，(11,13)，(13,20)，(20, +∞) 五个范围区间锁住</strong></li>
+<li><strong>Next-Key Locking类似于上述两种锁的结合，它可以锁住的区间有为  (-∞,10]，(10,11]，(11,13]，(13,20]，(20, +∞)  ，可以看出它即锁定了一个范围，也会锁定记录本身。</strong></li>
+</ol>
+<p><img src="https://upload-images.jianshu.io/upload_images/623378-bddee480df2fe659.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/620/format/webp" alt=""></p>
+<p>​    此外还有一种锁：previous-key locking技术，它可以锁住的区间有为(-∞,10)，[10,11)，[11,13)，[13,20)，[20, +∞)</p>
+<h4 id="对于不同索引的情况下的Next-Key-Lock"><a href="#对于不同索引的情况下的Next-Key-Lock" class="headerlink" title="对于不同索引的情况下的Next-Key Lock"></a>对于不同索引的情况下的Next-Key Lock</h4><blockquote>
+<ol>
+<li><strong>当查询的索引含有唯一属性的时候，InnoDB存储引擎会对Next-Key Lock进行优化，将其降为Record Lock，即仅仅锁住索引本身，而不是范围，从而提高并发效率。</strong></li>
+<li><strong>对于唯一索引，其加上的是Record Lock，仅锁住记录本身。但也有特别情况，那就是唯一索引由多个列组成，而查询仅是查找多个唯一索引列中的其中一个，那么加锁的情况依然是Next-key lock。</strong></li>
+<li><strong>若是辅助索引，则加的是next-key lock，特别需要注意的是，InnoDB存储引擎还会对辅助索引下一个键值加上gap lock。</strong></li>
+</ol>
+</blockquote>
+<h5 id="唯一属性的索引的情况"><a href="#唯一属性的索引的情况" class="headerlink" title="唯一属性的索引的情况"></a>唯一属性的索引的情况</h5><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">DROP</span> <span class="keyword">TABLE</span></span><br><span class="line"><span class="keyword">IF</span> <span class="keyword">EXISTS</span> t;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> t (a <span class="built_in">INT</span> PRIMARY <span class="keyword">KEY</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> t</span><br><span class="line"><span class="keyword">VALUES</span>(<span class="number">1</span>),(<span class="number">2</span>),(<span class="number">5</span>);</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://img-blog.csdn.net/20181017083923352?watermark/2/text/aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3h1bnphb3NpeWVjYW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70" alt=""></p>
+<p>​    </p>
+<p>​    表t中共有1、2、5三个值。在上面的例子中，在会话A中首先对a=5进行X锁定。而由于a是主键且唯一，因此锁定的仅是5这个值，而不是(2,5)这个范围，这样在会话B中插入值4而不会阻塞，可以立即插入并返回。</p>
+<p>​    <strong>即锁定由Next-Key Lock算法降级为了Record Lock，从而提高应用的并发性</strong></p>
+<h5 id="辅助索引的情况下"><a href="#辅助索引的情况下" class="headerlink" title="辅助索引的情况下"></a>辅助索引的情况下</h5><p>插入数据：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> z(a <span class="built_in">INT</span>,b <span class="built_in">INT</span>, PRIMARY <span class="keyword">KEY</span>(a),<span class="keyword">KEY</span>(b));</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> z <span class="keyword">SELECT</span> <span class="number">1</span>,<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> z <span class="keyword">SELECT</span> <span class="number">3</span>,<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> z <span class="keyword">SELECT</span> <span class="number">5</span>,<span class="number">3</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> z <span class="keyword">SELECT</span> <span class="number">7</span>,<span class="number">6</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> z <span class="keyword">SELECT</span> <span class="number">10</span>,<span class="number">8</span>;</span><br></pre></td></tr></table></figure>
+
+<p>表z的列b是辅助索引，若在会话A中执行下面的SQL语句</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> Z <span class="keyword">WHERE</span> b=<span class="number">3</span> <span class="keyword">FOR</span> <span class="keyword">UPDATE</span>;</span><br></pre></td></tr></table></figure>
+
+<p>​    很明显，这时SQL语句通过索引列b进行查询，因此其使用传统的Next-Key Locking技术加锁，并且由于有两个索引，其需要分别进行锁定。</p>
+<p>​    对于聚集索引（唯一属性的索引），其仅对列a等于5的索引加上Record Lock。</p>
+<p>​    而对于辅助索引，其加上的是Next-Key Locking，锁定的范围是(1,3] ,<strong>特别需要注意的是，InnoDB存储引擎会对辅助索引下一个键值加上 gap lock，即还有一个辅助索引范围为(3,6)的锁。</strong></p>
+<p>​    若在新<strong>会话B</strong>中运行下面的SQL语句，都会被阻塞</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> Z <span class="keyword">WHERE</span> a=<span class="number">5</span> <span class="keyword">LOCK</span> <span class="keyword">IN</span> <span class="keyword">SHARE</span> <span class="keyword">MODE</span>;</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> Z <span class="keyword">SELECT</span> <span class="number">4</span>,<span class="number">2</span>;</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> Z <span class="keyword">SELECT</span> <span class="number">6</span>,<span class="number">5</span>;</span><br></pre></td></tr></table></figure>
+
+<p>​    <strong>第一个SQL语句不能执行，因为在会话A中执行的SQL语句已经聚集索引中列a=5的值加上X锁，因此执行会被阻塞。</strong></p>
+<p>​    <strong>第二个SQL语句，主键插入4，没有问题，但是插入的辅助索引值2在锁定的范围（1，3）中因此执行同样会被阻塞。</strong></p>
+<p>​    <strong>第三个SQL语句，插入的主键6没有被锁定，5也不在范围（1，3）之间。但插入的值5在另一个锁定范围（3，6）中，故同样需要等待。</strong></p>
+<h4 id="Phantom-Problem幻读问题的产生"><a href="#Phantom-Problem幻读问题的产生" class="headerlink" title="Phantom Problem幻读问题的产生"></a>Phantom Problem幻读问题的产生</h4><p>而下面的SQL语句，不会被阻塞，可以立即执行</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> Z <span class="keyword">SELECT</span> <span class="number">8</span>,<span class="number">6</span>;</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> Z SEELCT <span class="number">2</span>,<span class="number">0</span>;</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> Z <span class="keyword">SELECT</span> <span class="number">6</span>,<span class="number">7</span>;</span><br></pre></td></tr></table></figure>
+
+<p>​    从上面的例子中可以看到，<strong>Gap Lock的作用是为了阻止多个事务将记录插入到同一个范围内，而这会导致Phantom Problem问题的产生。</strong></p>
+<p>​    例如在上面的例子中，会话A中用户已经锁定了b=3的记录。若此时没有Gap Lock锁定（3，6），那么用户可以插入索引b列为3的记录，这会导致会话A中的用户再次执行同样查询时会返回不同的记录，导致Phantom Problem问题的产生。</p>
+<h4 id="显式地关闭Gap-Lock"><a href="#显式地关闭Gap-Lock" class="headerlink" title="显式地关闭Gap Lock"></a>显式地关闭Gap Lock</h4><ul>
+<li>将事务的隔离级别设置为READ COMMITTED</li>
+<li>将参数innodb_locks_unsafe_for_binlog设置为1</li>
+</ul>
+<p>​    在上述的配置下，除了外键约束和唯一性检查依然需要的Gap Lock，其余情况仅使用Record Lock进行锁定。但需要牢记的是，上述设置破坏了事务的隔离性。</p>
+<h4 id="插入记录的下一条检查"><a href="#插入记录的下一条检查" class="headerlink" title="插入记录的下一条检查"></a>插入记录的下一条检查</h4><p>​    在InnoDB存储引擎中，<strong>对于INSERT的操作，其会检查插入记录的下一条记录是否被锁定，若已被锁定，则不允许查询。</strong></p>
+<p>​    对于上面的例子，会话A已经锁定了表z中b=3的记录，即已经锁定了（1，3 ] 的范围，这时若在其他会话中进行如下的插入同样会导致阻塞：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> Z <span class="keyword">SELECT</span> <span class="number">2</span>,<span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<p>​    因为在辅助索引列b上插入值为2的记录时，会监测到下一个记录3已经被索引。而将插入修改为如下的值，可以立即执行：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> Z <span class="keyword">SELECT</span> <span class="number">2</span>,<span class="number">0</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="疑问"><a href="#疑问" class="headerlink" title="疑问:"></a>疑问:</h4><ul>
+<li><input disabled="" type="checkbox"> 什么是range类型查询，point类型查询</li>
+</ul>
+<h4 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h4><p>《Mysql技术内幕》</p>
+<p><a href="https://www.jianshu.com/p/7d050498d9da" target="_blank" rel="noopener">https://www.jianshu.com/p/7d050498d9da</a></p>
+<p><a href="https://blog.csdn.net/jiankunking/article/details/83104151" target="_blank" rel="noopener">https://blog.csdn.net/jiankunking/article/details/83104151</a></p>
+<p>​    </p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+<div>
+    
+      <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------本文已完结，撒花~<i class="fa fa-paw"></i>~感谢您的阅读-------------</div>
+    
+</div>
+    
+</div>
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/%E9%94%81%E7%9A%84%E7%AE%97%E6%B3%95/" rel="tag"># 锁的算法</a>
+          
+            <a href="/tags/%E5%B9%BB%E8%AF%BB/" rel="tag"># 幻读</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/07/07/MySQL/(%E8%BD%AC%E8%BD%BD)Mysql%E5%8A%A0%E9%94%81%E5%88%86%E6%9E%90/" rel="next" title="(转载)Mysql加锁分析">
+                <i class="fa fa-chevron-left"></i> (转载)Mysql加锁分析
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/07/10/MySQL/%E8%81%8A%E8%81%8A%E5%A4%96%E9%94%AE%E7%9A%84%E4%B8%80%E4%BA%9B%E6%80%9D%E8%80%83/" rel="prev" title="聊聊对于外键的前世今生">
+                聊聊对于外键的前世今生 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/images/avatar.png"
+                alt="Billy" />
+            
+              <p class="site-author-name" itemprop="name">Billy</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%20%7C%7C%20archive%20%20%20%20%20%20%20%20%20%20%20/%E5%BD%92%E6%A1%A3">
+              
+                  <span class="site-state-item-count">24</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">22</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/KeepHot" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github-alt"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://weibo.com/u/6076021248" target="_blank" title="微博">
+                      
+                        <i class="fa fa-fw fa-weibo"></i>微博</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.zhihu.com/people/liu-quan-7-71/activities" target="_blank" title="知乎">
+                      
+                        <i class="fa fa-fw fa-angellist"></i>知乎</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:billy9h3@163.com" target="_blank" title="E-mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友链
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://www.hollischuang.com/" title="Hollis" target="_blank">Hollis</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://www.iocoder.cn/?csdn" title="芋道源码" target="_blank">芋道源码</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://ifeve.com/" title="并发编程网" target="_blank">并发编程网</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://tech.meituan.com/" title="美团技术团队" target="_blank">美团技术团队</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://cmsblogs.com/" title="Java技术驿站" target="_blank">Java技术驿站</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://colobu.com/" title="鸟窝" target="_blank">鸟窝</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://coolshell.cn/" title="酷壳" target="_blank">酷壳</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#InnoDB引擎下的三种行锁算法"><span class="nav-number">1.</span> <span class="nav-text">InnoDB引擎下的三种行锁算法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Record-Locks"><span class="nav-number">1.1.</span> <span class="nav-text">Record Locks</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Gap-Lock"><span class="nav-number">1.2.</span> <span class="nav-text">Gap Lock</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Next-Key-Lock"><span class="nav-number">1.3.</span> <span class="nav-text">Next-Key Lock</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#举一个栗之🌰"><span class="nav-number">1.4.</span> <span class="nav-text">举一个栗之🌰</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#对于不同索引的情况下的Next-Key-Lock"><span class="nav-number">1.5.</span> <span class="nav-text">对于不同索引的情况下的Next-Key Lock</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#唯一属性的索引的情况"><span class="nav-number">1.5.1.</span> <span class="nav-text">唯一属性的索引的情况</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#辅助索引的情况下"><span class="nav-number">1.5.2.</span> <span class="nav-text">辅助索引的情况下</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Phantom-Problem幻读问题的产生"><span class="nav-number">1.6.</span> <span class="nav-text">Phantom Problem幻读问题的产生</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#显式地关闭Gap-Lock"><span class="nav-number">1.7.</span> <span class="nav-text">显式地关闭Gap Lock</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#插入记录的下一条检查"><span class="nav-number">1.8.</span> <span class="nav-text">插入记录的下一条检查</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#疑问"><span class="nav-number">1.9.</span> <span class="nav-text">疑问:</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#参考资料"><span class="nav-number">1.10.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Billy</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
