@@ -1,132 +1,52 @@
 <!DOCTYPE html>
-
-
-
-  
-
-
-<html class="theme-next gemini use-motion" lang="zh-Hans">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8"/>
-<meta http-equiv="X-UA-Compatible" content="IE=edge" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
 <meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
 
 
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
 
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
 
-
-
-
-
-
-<meta http-equiv="Cache-Control" content="no-transform" />
-<meta http-equiv="Cache-Control" content="no-siteapp" />
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-  
-  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
-
-
-
-
-
-
-
-<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
-
-<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
-
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
-
-
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
-
-
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
-
-
-  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
-
-
-
-
-
-  <meta name="keywords" content="JVM,运行期," />
-
-
-
-
-
-
-
-
-
-
-<meta name="description" content="本文承接上文——Java晚期(运行期)优化(一)，主要讲解了Java代码的编译过程和运行期间的一些常用的编译优化技术，如公共子表达式的消除，数组边界检查的消除，方法内联等，本文参考资料见文末">
+  <meta name="description" content="本文承接上文——Java晚期(运行期)优化(一)，主要讲解了Java代码的编译过程和运行期间的一些常用的编译优化技术，如公共子表达式的消除，数组边界检查的消除，方法内联等，本文参考资料见文末">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Java晚期(运行期)优化(二)">
 <meta property="og:url" content="http://yoursite.com/2019/04/17/JVM/Java%E8%BF%90%E8%A1%8C%E6%9C%9F%E4%BC%98%E5%8C%96(%E4%BA%8C)/index.html">
 <meta property="og:site_name" content="Billy&#39;s Blog">
 <meta property="og:description" content="本文承接上文——Java晚期(运行期)优化(一)，主要讲解了Java代码的编译过程和运行期间的一些常用的编译优化技术，如公共子表达式的消除，数组边界检查的消除，方法内联等，本文参考资料见文末">
+<meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="c:%5CUsers%5Cliuquan%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5C1557298340071.png">
 <meta property="article:published_time" content="2019-04-17T08:30:03.000Z">
 <meta property="article:modified_time" content="2020-07-15T07:21:13.508Z">
-<meta property="article:author" content="Billy">
 <meta property="article:tag" content="JVM">
 <meta property="article:tag" content="运行期">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="c:%5CUsers%5Cliuquan%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5C1557298340071.png">
 
+<link rel="canonical" href="http://yoursite.com/2019/04/17/JVM/Java%E8%BF%90%E8%A1%8C%E6%9C%9F%E4%BC%98%E5%8C%96(%E4%BA%8C)/">
 
 
-<script type="text/javascript" id="hexo.configurations">
-  var NexT = window.NexT || {};
-  var CONFIG = {
-    root: '/',
-    scheme: 'Gemini',
-    version: '5.1.4',
-    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
-    fancybox: true,
-    tabs: true,
-    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
-    duoshuo: {
-      userId: '0',
-      author: '博主'
-    },
-    algolia: {
-      applicationID: '',
-      apiKey: '',
-      indexName: '',
-      hits: {"per_page":10},
-      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
-    }
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
   };
 </script>
-
-
-
-  <link rel="canonical" href="http://yoursite.com/2019/04/17/JVM/Java运行期优化(二)/"/>
-
-
-
-
 
   <title>Java晚期(运行期)优化(二) | Billy's Blog</title>
   
@@ -136,197 +56,155 @@
 
 
 
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
 
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
 
-<meta name="generator" content="Hexo 4.2.1"></head>
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
 
-<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+</head>
 
-  
-  
-    
-  
-
-  <div class="container sidebar-position-left page-post-detail">
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
     <div class="headband"></div>
 
-    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
-      <div class="header-inner"><div class="site-brand-wrapper">
-  <div class="site-meta ">
-    
-
-    <div class="custom-logo-site-title">
-      <a href="/"  class="brand" rel="start">
-        <span class="logo-line-before"><i></i></span>
-        <span class="site-title">Billy's Blog</span>
-        <span class="logo-line-after"><i></i></span>
-      </a>
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
     </div>
-      
-        <p class="site-subtitle">仰望星空，脚踏实地</p>
-      
   </div>
 
-  <div class="site-nav-toggle">
-    <button>
-      <span class="btn-bar"></span>
-      <span class="btn-bar"></span>
-      <span class="btn-bar"></span>
-    </button>
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Billy's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">仰望星空，脚踏实地</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
   </div>
 </div>
 
+
+
+
 <nav class="site-nav">
-  
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
 
-  
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
 
-  
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
 </nav>
 
 
 
- </div>
+
+</div>
     </header>
 
-    <main id="main" class="main">
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
       <div class="main-inner">
         <div class="content-wrap">
-          <div id="content" class="content">
+          
+
+          <div class="content post posts-expand">
             
 
-  <div id="posts" class="posts-expand">
     
-
-  
-
   
   
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/17/JVM/Java%E8%BF%90%E8%A1%8C%E6%9C%9F%E4%BC%98%E5%8C%96(%E4%BA%8C)/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Billy">
-      <meta itemprop="description" content="">
       <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="">
+      <meta itemprop="description" content="">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
       <meta itemprop="name" content="Billy's Blog">
     </span>
-
-    
       <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">Java晚期(运行期)优化(二)</h1>
-        
+        <h1 class="post-title" itemprop="name headline">
+          Java晚期(运行期)优化(二)
+        </h1>
 
         <div class="post-meta">
-          <span class="post-time">
-            
+            <span class="post-meta-item">
               <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
+                <i class="far fa-calendar"></i>
               </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-17T16:30:03+08:00">
-                2019-04-17
-              </time>
-            
+              <span class="post-meta-item-text">发表于</span>
 
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java%E8%99%9A%E6%8B%9F%E6%9C%BA/" itemprop="url" rel="index">
-                    <span itemprop="name">Java虚拟机</span>
-                  </a>
-                </span>
-
-                
-                
-              
+              <time title="创建时间：2019-04-17 16:30:03" itemprop="dateCreated datePublished" datetime="2019-04-17T16:30:03+08:00">2019-04-17</time>
             </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-            <div class="post-wordcount">
-              
-                
+              <span class="post-meta-item">
                 <span class="post-meta-item-icon">
-                  <i class="fa fa-file-word-o"></i>
+                  <i class="far fa-calendar-check"></i>
                 </span>
-                
-                  <span class="post-meta-item-text">字数统计&#58;</span>
-                
-                <span title="字数统计 ">
-                   字
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-07-15 15:21:13" itemprop="dateModified" datetime="2020-07-15T15:21:13+08:00">2020-07-15</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java%E8%99%9A%E6%8B%9F%E6%9C%BA/" itemprop="url" rel="index"><span itemprop="name">Java虚拟机</span></a>
                 </span>
-              
-
-              
-                <span class="post-meta-divider">|</span>
-              
-
-              
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-clock-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">阅读时长 &asymp;</span>
-                
-                <span title="阅读时长">
-                   分钟
-                </span>
-              
-            </div>
-          
+            </span>
 
           
 
         </div>
       </header>
-    
 
     
     
     
     <div class="post-body" itemprop="articleBody">
-
-      
-      
 
       
         <pre><code>本文承接上文——Java晚期(运行期)优化(一)，主要讲解了Java代码的编译过程和运行期间的一些常用的编译优化技术，如公共子表达式的消除，数组边界检查的消除，方法内联等，本文参考资料见文末</code></pre><a id="more"></a>
@@ -435,337 +313,207 @@
 <p>​    相对的，如果一个数据可以继续分解，那它就称作<strong>聚合量（Aggregate）</strong>，Java 中的对象就是最典型的聚合量。</p>
 <p>​    如果把一个 Java 对象拆散，<strong>根据程序访问的情况，将其使用到的成员变量恢复原始类型来访问就叫做标量替换。</strong>如果逃逸分析证明一个对象不会被外部访问，并且这个对象可以被拆散的话，<strong>那程序真正执行的时候将可能不创建这个对象，而改为直接创建它的若干个被这个方法使用到的成员变量来代替。</strong>将对象拆分后，除了可以让对象的成员变量在栈上（栈上存储的数据，有很大的概率会被虚拟机分配至物理机器的告诉寄存器中存储）分配和读写之外，还可以为后续进一步的优化手段创建条件。</p>
 
-      
     </div>
+
     
     
     
 
-    
-
-    
-
-    
-<div>
-    
-      <div>
-    
-        <div style="text-align:center;color: #ccc;font-size:14px;">-------------本文已完结，撒花~<i class="fa fa-paw"></i>~感谢您的阅读-------------</div>
-    
-</div>
-    
-</div>
-    <footer class="post-footer">
-      
-        <div class="post-tags">
-          
-            <a href="/tags/JVM/" rel="tag"># JVM</a>
-          
-            <a href="/tags/%E8%BF%90%E8%A1%8C%E6%9C%9F/" rel="tag"># 运行期</a>
-          
-        </div>
-      
-
-      
-      
-      
-
-      
-        <div class="post-nav">
-          <div class="post-nav-next post-nav-item">
-            
-              <a href="/2019/04/14/JVM/Java%E8%BF%90%E8%A1%8C%E6%9C%9F%E4%BC%98%E5%8C%96(%E4%B8%80)/" rel="next" title="Java晚期(运行期)优化(一)">
-                <i class="fa fa-chevron-left"></i> Java晚期(运行期)优化(一)
-              </a>
-            
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/JVM/" rel="tag"># JVM</a>
+              <a href="/tags/%E8%BF%90%E8%A1%8C%E6%9C%9F/" rel="tag"># 运行期</a>
           </div>
 
-          <span class="post-nav-divider"></span>
+        
 
-          <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/04/18/%E9%9B%86%E5%90%88/HashMap%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E4%BA%8C%EF%BC%89/" rel="prev" title="(转载)HashMap的源码分析（二）">
-                (转载)HashMap的源码分析（二） <i class="fa fa-chevron-right"></i>
-              </a>
-            
-          </div>
-        </div>
-      
 
-      
-      
-    </footer>
-  </div>
-  
-  
-  
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/04/14/JVM/Java%E8%BF%90%E8%A1%8C%E6%9C%9F%E4%BC%98%E5%8C%96(%E4%B8%80)/" rel="prev" title="Java晚期(运行期)优化(一)">
+      <i class="fa fa-chevron-left"></i> Java晚期(运行期)优化(一)
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/04/18/%E9%9B%86%E5%90%88/HashMap%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E4%BA%8C%EF%BC%89/" rel="next" title="(转载)HashMap的源码分析（二）">
+      (转载)HashMap的源码分析（二） <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
   </article>
+  
+  
+  
 
-
-
-    <div class="post-spread">
-      
-    </div>
-  </div>
 
 
           </div>
           
 
-
-          
-
-  
-
-
-
-        </div>
-        
-          
-  
-  <div class="sidebar-toggle">
-    <div class="sidebar-toggle-line-wrap">
-      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
-      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
-    </div>
-  </div>
-
-  <aside id="sidebar" class="sidebar">
-    
-    <div class="sidebar-inner">
-
-      
-
-      
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            站点概览
-          </li>
-        </ul>
-      
-
-      <section class="site-overview-wrap sidebar-panel">
-        <div class="site-overview">
-          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-            
-              <img class="site-author-image" itemprop="image"
-                src="/images/avatar.png"
-                alt="Billy" />
-            
-              <p class="site-author-name" itemprop="name">Billy</p>
-              <p class="site-description motion-element" itemprop="description"></p>
-          </div>
-
-          <nav class="site-state motion-element">
-
-            
-              <div class="site-state-item site-state-posts">
-              
-                <a href="/archives">
-              
-                  <span class="site-state-item-count">14</span>
-                  <span class="site-state-item-name">日志</span>
-                </a>
-              </div>
-            
-
-            
-              
-              
-              <div class="site-state-item site-state-categories">
-                <a href="/categories/index.html">
-                  <span class="site-state-item-count">4</span>
-                  <span class="site-state-item-name">分类</span>
-                </a>
-              </div>
-            
-
-            
-              
-              
-              <div class="site-state-item site-state-tags">
-                <a href="/tags/index.html">
-                  <span class="site-state-item-count">13</span>
-                  <span class="site-state-item-name">标签</span>
-                </a>
-              </div>
-            
-
-          </nav>
-
-          
-
-          
-            <div class="links-of-author motion-element">
-                
-                  <span class="links-of-author-item">
-                    <a href="https://github.com/KeepHot" target="_blank" title="GitHub">
-                      
-                        <i class="fa fa-fw fa-github-alt"></i>GitHub</a>
-                  </span>
-                
-                  <span class="links-of-author-item">
-                    <a href="https://weibo.com/u/6076021248" target="_blank" title="微博">
-                      
-                        <i class="fa fa-fw fa-weibo"></i>微博</a>
-                  </span>
-                
-                  <span class="links-of-author-item">
-                    <a href="https://www.zhihu.com/people/liu-quan-7-71/activities" target="_blank" title="知乎">
-                      
-                        <i class="fa fa-fw fa-angellist"></i>知乎</a>
-                  </span>
-                
-                  <span class="links-of-author-item">
-                    <a href="mailto:billy9h3@163.com" target="_blank" title="E-mail">
-                      
-                        <i class="fa fa-fw fa-envelope"></i>E-mail</a>
-                  </span>
-                
-            </div>
-          
-
-          
-          
-
-          
-          
-            <div class="links-of-blogroll motion-element links-of-blogroll-block">
-              <div class="links-of-blogroll-title">
-                <i class="fa  fa-fw fa-link"></i>
-                友链
-              </div>
-              <ul class="links-of-blogroll-list">
-                
-                  <li class="links-of-blogroll-item">
-                    <a href="https://www.hollischuang.com/" title="Hollis" target="_blank">Hollis</a>
-                  </li>
-                
-                  <li class="links-of-blogroll-item">
-                    <a href="http://www.iocoder.cn/?csdn" title="芋道源码" target="_blank">芋道源码</a>
-                  </li>
-                
-                  <li class="links-of-blogroll-item">
-                    <a href="http://ifeve.com/" title="并发编程网" target="_blank">并发编程网</a>
-                  </li>
-                
-                  <li class="links-of-blogroll-item">
-                    <a href="https://tech.meituan.com/" title="美团技术团队" target="_blank">美团技术团队</a>
-                  </li>
-                
-                  <li class="links-of-blogroll-item">
-                    <a href="http://cmsblogs.com/" title="Java技术驿站" target="_blank">Java技术驿站</a>
-                  </li>
-                
-                  <li class="links-of-blogroll-item">
-                    <a href="https://colobu.com/" title="鸟窝" target="_blank">鸟窝</a>
-                  </li>
-                
-                  <li class="links-of-blogroll-item">
-                    <a href="https://coolshell.cn/" title="酷壳" target="_blank">酷壳</a>
-                  </li>
-                
-              </ul>
-            </div>
-          
-
-          
-
-        </div>
-      </section>
-
-      
-      <!--noindex-->
-        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-              
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#编译过程"><span class="nav-number">1.</span> <span class="nav-text">编译过程</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#允许后台编译："><span class="nav-number">1.0.1.</span> <span class="nav-text">允许后台编译：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#不允许后台编译："><span class="nav-number">1.0.2.</span> <span class="nav-text">不允许后台编译：</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Client-Compiler-："><span class="nav-number">1.1.</span> <span class="nav-text">Client Compiler ：</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#第一个阶段"><span class="nav-number">1.1.1.</span> <span class="nav-text">第一个阶段</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#第二个阶段"><span class="nav-number">1.1.2.</span> <span class="nav-text">第二个阶段</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#最后阶段"><span class="nav-number">1.1.3.</span> <span class="nav-text">最后阶段</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Server-Compiler"><span class="nav-number">1.2.</span> <span class="nav-text">Server Compiler</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#编译优化技术"><span class="nav-number">2.</span> <span class="nav-text">编译优化技术</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#举一个普通的例子"><span class="nav-number">2.1.</span> <span class="nav-text">举一个普通的例子</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#第一步进行方法内联"><span class="nav-number">2.1.1.</span> <span class="nav-text">第一步进行方法内联</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#第二步进行冗余访问消除"><span class="nav-number">2.1.2.</span> <span class="nav-text">第二步进行冗余访问消除</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#第三步我们进行复写传播"><span class="nav-number">2.1.3.</span> <span class="nav-text">第三步我们进行复写传播</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#第四步我们进行无用代码消除"><span class="nav-number">2.1.4.</span> <span class="nav-text">第四步我们进行无用代码消除</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#公共子表达式消除——与语言无关的经典优化技术"><span class="nav-number">2.2.</span> <span class="nav-text">公共子表达式消除——与语言无关的经典优化技术</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#数组边界检查消除——语言相关的经典优化技术"><span class="nav-number">2.3.</span> <span class="nav-text">数组边界检查消除——语言相关的经典优化技术</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#方法内联——最重要的优化技术"><span class="nav-number">2.4.</span> <span class="nav-text">方法内联——最重要的优化技术</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#逃逸分析——最前沿的优化技术"><span class="nav-number">2.5.</span> <span class="nav-text">逃逸分析——最前沿的优化技术</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#栈上分配（Stack-Allocation）："><span class="nav-number">2.5.1.</span> <span class="nav-text">栈上分配（Stack Allocation）：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#同步消除（Synchronized-Elimination）："><span class="nav-number">2.5.2.</span> <span class="nav-text">同步消除（Synchronized Elimination）：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#标量替换（Scalar-Replacement）："><span class="nav-number">2.5.3.</span> <span class="nav-text">标量替换（Scalar Replacement）：</span></a></li></ol></li></ol></li></ol></div>
-            
-
-          </div>
-        </section>
-      <!--/noindex-->
-      
-
-      
-
-    </div>
-  </aside>
-
-
-        
-      </div>
-    </main>
-
-    <footer id="footer" class="footer">
-      <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
-  <span class="with-love">
-    <i class="fa fa-user"></i>
-  </span>
-  <span class="author" itemprop="copyrightHolder">Billy</span>
-
-  
-</div>
-
-
-  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
-
-
-
-  <span class="post-meta-divider">|</span>
-
-
-
-  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
-
-
-
-
-        
-
-
-
-
-
-
-
-        
-      </div>
-    </footer>
-
-    
-      <div class="back-to-top">
-        <i class="fa fa-arrow-up"></i>
-        
-      </div>
-    
-
-    
-
-  </div>
-
-  
-
-<script type="text/javascript">
-  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
-    window.Promise = null;
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
   }
 </script>
 
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#编译过程"><span class="nav-number">1.</span> <span class="nav-text">编译过程</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#允许后台编译："><span class="nav-number">1.0.1.</span> <span class="nav-text">允许后台编译：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#不允许后台编译："><span class="nav-number">1.0.2.</span> <span class="nav-text">不允许后台编译：</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Client-Compiler-："><span class="nav-number">1.1.</span> <span class="nav-text">Client Compiler ：</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#第一个阶段"><span class="nav-number">1.1.1.</span> <span class="nav-text">第一个阶段</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#第二个阶段"><span class="nav-number">1.1.2.</span> <span class="nav-text">第二个阶段</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#最后阶段"><span class="nav-number">1.1.3.</span> <span class="nav-text">最后阶段</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Server-Compiler"><span class="nav-number">1.2.</span> <span class="nav-text">Server Compiler</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#编译优化技术"><span class="nav-number">2.</span> <span class="nav-text">编译优化技术</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#举一个普通的例子"><span class="nav-number">2.1.</span> <span class="nav-text">举一个普通的例子</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#第一步进行方法内联"><span class="nav-number">2.1.1.</span> <span class="nav-text">第一步进行方法内联</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#第二步进行冗余访问消除"><span class="nav-number">2.1.2.</span> <span class="nav-text">第二步进行冗余访问消除</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#第三步我们进行复写传播"><span class="nav-number">2.1.3.</span> <span class="nav-text">第三步我们进行复写传播</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#第四步我们进行无用代码消除"><span class="nav-number">2.1.4.</span> <span class="nav-text">第四步我们进行无用代码消除</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#公共子表达式消除——与语言无关的经典优化技术"><span class="nav-number">2.2.</span> <span class="nav-text">公共子表达式消除——与语言无关的经典优化技术</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#数组边界检查消除——语言相关的经典优化技术"><span class="nav-number">2.3.</span> <span class="nav-text">数组边界检查消除——语言相关的经典优化技术</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#方法内联——最重要的优化技术"><span class="nav-number">2.4.</span> <span class="nav-text">方法内联——最重要的优化技术</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#逃逸分析——最前沿的优化技术"><span class="nav-number">2.5.</span> <span class="nav-text">逃逸分析——最前沿的优化技术</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#栈上分配（Stack-Allocation）："><span class="nav-number">2.5.1.</span> <span class="nav-text">栈上分配（Stack Allocation）：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#同步消除（Synchronized-Elimination）："><span class="nav-number">2.5.2.</span> <span class="nav-text">同步消除（Synchronized Elimination）：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#标量替换（Scalar-Replacement）："><span class="nav-number">2.5.3.</span> <span class="nav-text">标量替换（Scalar Replacement）：</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt=""
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name"></p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="fa fa-link fa-fw"></i>
+      友链
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="https://www.hollischuang.com/" title="https:&#x2F;&#x2F;www.hollischuang.com&#x2F;" rel="noopener" target="_blank">Hollis</a>
+        </li>
+        <li class="links-of-blogroll-item">
+          <a href="http://www.iocoder.cn/?csdn" title="http:&#x2F;&#x2F;www.iocoder.cn&#x2F;?csdn" rel="noopener" target="_blank">芋道源码</a>
+        </li>
+        <li class="links-of-blogroll-item">
+          <a href="http://ifeve.com/" title="http:&#x2F;&#x2F;ifeve.com&#x2F;" rel="noopener" target="_blank">并发编程网</a>
+        </li>
+        <li class="links-of-blogroll-item">
+          <a href="https://tech.meituan.com/" title="https:&#x2F;&#x2F;tech.meituan.com&#x2F;" rel="noopener" target="_blank">美团技术团队</a>
+        </li>
+        <li class="links-of-blogroll-item">
+          <a href="http://cmsblogs.com/" title="http:&#x2F;&#x2F;cmsblogs.com&#x2F;" rel="noopener" target="_blank">Java技术驿站</a>
+        </li>
+        <li class="links-of-blogroll-item">
+          <a href="https://colobu.com/" title="https:&#x2F;&#x2F;colobu.com&#x2F;" rel="noopener" target="_blank">鸟窝</a>
+        </li>
+        <li class="links-of-blogroll-item">
+          <a href="https://coolshell.cn/" title="https:&#x2F;&#x2F;coolshell.cn&#x2F;" rel="noopener" target="_blank">酷壳</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder"></span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
 
 
 
 
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
 
 
 
@@ -783,118 +531,8 @@
 
 
 
-  
-  
-    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
-  
 
-  
-  
-    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
-  
 
-  
-  
-    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
-  
-
-  
-  
-    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
-  
-
-  
-  
-    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
-  
-
-  
-  
-    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
-  
-
-
-  
-
-
-  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
-
-  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
-
-
-
-  
-  
-
-
-  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
-
-  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
-
-
-
-  
-  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
-<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
-
-
-
-  
-
-
-  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
-
-
-
-  
-
-
-  
-
-
-
-
-	
-
-
-
-
-
-  
-
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
-
-
-  
-
-  
-
-  
-
-  
-  
-
-  
 
   
 
