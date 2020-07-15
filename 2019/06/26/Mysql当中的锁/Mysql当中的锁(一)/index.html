@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="数据库锁," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&lt;Excerpt in index | 首页摘要&gt;  本文简单地讲解了Mysql的InnoDB引擎的lock和latch，着重地从概念上讲解了两种类型的行级锁，以及InooDB下实际的使用情况——多粒度锁定的概念以及其具体的实现方式（意向锁），还有使用意向锁的价值，最后提及了一下查看的命令。本文参考资料见文末">
+<meta property="og:type" content="article">
+<meta property="og:title" content="InnoDB引擎当中的锁 —— 行级锁与多粒度锁定">
+<meta property="og:url" content="http://yoursite.com/2019/06/26/Mysql%E5%BD%93%E4%B8%AD%E7%9A%84%E9%94%81/Mysql%E5%BD%93%E4%B8%AD%E7%9A%84%E9%94%81(%E4%B8%80)/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="&lt;Excerpt in index | 首页摘要&gt;  本文简单地讲解了Mysql的InnoDB引擎的lock和latch，着重地从概念上讲解了两种类型的行级锁，以及InooDB下实际的使用情况——多粒度锁定的概念以及其具体的实现方式（意向锁），还有使用意向锁的价值，最后提及了一下查看的命令。本文参考资料见文末">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://www.ywnds.com/wp-content/uploads/2016/06/2018081608522356.jpg">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/11050090-979717a0c57ced77.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/788/format/webp">
+<meta property="article:published_time" content="2019-06-25T16:00:00.000Z">
+<meta property="article:modified_time" content="2019-07-07T11:04:23.375Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="数据库锁">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://www.ywnds.com/wp-content/uploads/2016/06/2018081608522356.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/06/26/Mysql当中的锁/Mysql当中的锁(一)/"/>
+
+
+
+
+
+  <title>InnoDB引擎当中的锁 —— 行级锁与多粒度锁定 | Hexo</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Hexo</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/%20" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags%20" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories%20" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/%20" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/06/26/Mysql%E5%BD%93%E4%B8%AD%E7%9A%84%E9%94%81/Mysql%E5%BD%93%E4%B8%AD%E7%9A%84%E9%94%81(%E4%B8%80)/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">InnoDB引擎当中的锁 —— 行级锁与多粒度锁定</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-06-26T00:00:00+08:00">
+                2019-06-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Mysql/" itemprop="url" rel="index">
+                    <span itemprop="name">Mysql</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-wordcount">
+              
+                
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Words count in article&#58;</span>
+                
+                <span title="Words count in article ">
+                   字
+                </span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">
+                   分钟
+                </span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&lt;Excerpt in index | 首页摘要&gt; </p>
+<p>本文简单地讲解了<strong>Mysql的InnoDB引擎的lock和latch，着重地从概念上讲解了两种类型的行级锁，以及InooDB下实际的使用情况——多粒度锁定的概念以及其具体的实现方式（意向锁），还有使用意向锁的价值，最后提及了一下查看的命令</strong>。本文参考资料见文末</p>
+<a id="more"></a>
+<p>&lt;The rest of contents | 余下全文&gt;</p>
+<h4 id="关于数据库锁的基本概述"><a href="#关于数据库锁的基本概述" class="headerlink" title="关于数据库锁的基本概述"></a>关于数据库锁的基本概述</h4><p>​    <strong>数据库和文件系统的一个关键差别就是锁这一个机制</strong>，一方面最大程度地利用数据库的并发访问，另一方面确保每个用户以一致的方式读取和修改数据。</p>
+<p>​    <strong>InnoDB存储引擎会在行级别上对表数据上锁，但是也会在数据库其他地方使用锁</strong>，例如操作缓存池中的LRU列表，删除，添加，移动LRU列表当中的元素，为了保证一致性，必须有锁的介入。</p>
+<p>​    由于数据库不同，<strong>所以不同数据库当中的锁的具体实现机制会大为不同</strong>,InnoDB引擎对于锁的实现通常有以下内容：<strong>提供一致性的非锁定读。行级锁支持，没有相关额外的开销，并同时得到并发性和一致性。</strong></p>
+<p>​    <strong>人们认为行级锁会增加开销，实际上，只有当实现行为本身会增加开销的时候，行级锁才会增加开销。InnoDB存储引擎不需要锁升级，因为一个锁和多个锁的开销是相同的。</strong></p>
+<h4 id="InnoDB锁所支持的锁"><a href="#InnoDB锁所支持的锁" class="headerlink" title="InnoDB锁所支持的锁"></a>InnoDB锁所支持的锁</h4><ul>
+<li>InnoDB支持行级锁(row-level locking)和表级锁,默认为行级锁</li>
+</ul>
+<h4 id="行锁给索引加锁"><a href="#行锁给索引加锁" class="headerlink" title="行锁给索引加锁"></a>行锁给索引加锁</h4><p>​    InnoDB行锁是通过给索引上的索引项加锁来实现的，InnoDB这种行锁实现特点意味着：<strong>只有通过索引条件检索数据或者采用一致性锁定读 FOR UPDATE，InnoDB才使用行级锁，否则，InnoDB将使用表锁！</strong>在实际应用中，要特别注意InnoDB行锁的这一特性，不然的话，可能导致大量的锁冲突，从而影响并发性能。</p>
+<ul>
+<li><p><strong>在不通过索引条件查询的时候,InnoDB 确实使用的是表锁,而不是行锁。</strong></p>
+</li>
+<li><p><strong>由于 MySQL 的行锁是针对索引加的锁,（索引组织表）不是针对记录加的锁,所以虽然是访问不同行的记录,但是如果是使用相同的索引键,是会出现锁冲突的。应用设计的时候要注意这一点。</strong></p>
+</li>
+<li><p><strong>当表有多个索引的时候,不同的事务可以使用不同的索引锁定不同的行,另外,不论 是使用主键索引、唯一索引或普通索引,InnoDB 都会使用行锁来对数据加锁。</strong></p>
+</li>
+<li><p>即便在条件中使用了索引字段,但是否使用索引来检索数据是由 MySQL 通过判断不同 执行计划的代价来决定的。</p>
+</li>
+<li><p>如果 MySQL 认为全表扫 效率更高,比如对一些很小的表,它 就不会使用索引,这种情况下 InnoDB 将使用表锁,而不是行锁。因此,在分析锁冲突时, 别忘了检查 SQL 的执行计划,以确认是否真正使用了索引。</p>
+</li>
+</ul>
+<h4 id="lock和latch"><a href="#lock和latch" class="headerlink" title="lock和latch"></a>lock和latch</h4><p>​    简单区分一下数据库中令人混淆的概念 lock 和 latch ，<strong>本文主要关注 lock ，锁定的是数据库中的对象，表，页，行。它在事务commit或rollback后释放。而latch的主要目的是保证并发线程操作临界资源的正确性。</strong></p>
+<table>
+<thead>
+<tr>
+<th align="center"></th>
+<th align="center">lock</th>
+<th align="center">latch</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">对象</td>
+<td align="center">事务</td>
+<td align="center">线程</td>
+</tr>
+<tr>
+<td align="center">保护</td>
+<td align="center">数据库内容</td>
+<td align="center">内存数据结构</td>
+</tr>
+<tr>
+<td align="center">持续时间</td>
+<td align="center">整个事务过程</td>
+<td align="center">临界资源</td>
+</tr>
+<tr>
+<td align="center">模式</td>
+<td align="center">行锁，表锁，意向锁</td>
+<td align="center">读写锁，互斥量</td>
+</tr>
+<tr>
+<td align="center">死锁</td>
+<td align="center">有死锁检测机制</td>
+<td align="center">无死锁检测和处理机制，仅通过应用程序加锁的顺序</td>
+</tr>
+<tr>
+<td align="center">存在于</td>
+<td align="center">LockManager的哈希表中</td>
+<td align="center">每个数据结构的对象中</td>
+</tr>
+</tbody></table>
+<h4 id="两种类型的行级锁"><a href="#两种类型的行级锁" class="headerlink" title="两种类型的行级锁"></a>两种类型的行级锁</h4><ul>
+<li><p>共享锁（S Lock），允许事务读一行数据。</p>
+</li>
+<li><p>排他锁（X Lock），允许事务删除或更新一行数据</p>
+</li>
+</ul>
+<p>  ​                                  <strong>两者的兼容性</strong></p>
+<table>
+<thead>
+<tr>
+<th align="center"></th>
+<th align="center">X</th>
+<th align="center">S</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">X</td>
+<td align="center">不兼容</td>
+<td align="center">不兼容</td>
+</tr>
+<tr>
+<td align="center">S</td>
+<td align="center">不兼容</td>
+<td align="center">兼容</td>
+</tr>
+</tbody></table>
+<p>​    <strong>事务T1获得了行r 的共享锁，因为读取没有改变行r 的数据，事务T2可以立即获取行r 的共享锁，这是锁兼容</strong></p>
+<p>​    <strong>若事务T3 此时想获得行r 的排他锁，必须等待T1，T2释放行r 的共享锁，这是锁不兼容</strong></p>
+<h4 id="InnoDB支持多粒度锁定"><a href="#InnoDB支持多粒度锁定" class="headerlink" title="InnoDB支持多粒度锁定"></a>InnoDB支持多粒度锁定</h4><ul>
+<li><p><strong>多粒度锁定：</strong></p>
+<p>就是说这种锁定允许事务在行级上的锁和表级上的锁同时存在。</p>
+</li>
+<li><p><strong>如何实现多粒度锁定：</strong></p>
+</li>
+</ul>
+<p>​    为了支持在不同粒度上进行加锁操作，InnoDB支持一种额外的锁方式，称之为意向锁。是将锁定的对象分为多个层次，意向锁意味着事务希望在更细粒度上锁。</p>
+<p>​    核心思想：<strong>如果将上锁的对象看成一颗树，那么对最下层的对象上锁，也就是对最细粒度的对象进行上锁，首先要对粗粒度的对象上锁。</strong></p>
+<ul>
+<li><strong>举一个栗子🌰</strong></li>
+</ul>
+<p>​    </p>
+<p><img src="http://www.ywnds.com/wp-content/uploads/2016/06/2018081608522356.jpg" alt=""></p>
+<p>​    如果需要对页上的r记录上X锁，那么分别需要对数据库、表、页上意向锁IX，最后对记录r上X锁。若其中任何一个部分导致等待，那么该操作需要等待粗粒度锁的完成。</p>
+<p>​    在对记录r 加X锁之前，已经有事务对 表2 进行了S表锁，那么表2 上已存在S锁，之后事务需要对记录r 在表2 上加IX，由于不兼容，所以该事务需要等待表锁操作的完成。</p>
+<h4 id="多粒度锁定的两种意向锁"><a href="#多粒度锁定的两种意向锁" class="headerlink" title="多粒度锁定的两种意向锁"></a>多粒度锁定的两种意向锁</h4><p>​    InnoDB支持意向锁设计比较简练，其意向锁即为表级别的锁。支持两种意向锁，<strong>由于InnoDB存储引擎支持的是行级别的锁，因此意向锁其实不会阻塞除全表扫以外的任何请求。</strong></p>
+<ul>
+<li>意向共享锁（IS Lock），事务想要获得一张表中某几行的共享锁。</li>
+<li>意向排他锁（IX Lock），事务想要获得一张表中某几行的排他锁。</li>
+</ul>
+<p><img src="https://upload-images.jianshu.io/upload_images/11050090-979717a0c57ced77.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/788/format/webp" alt=""></p>
+<h4 id="意向锁的价值——提高了处理的性能，不再需要遍历表"><a href="#意向锁的价值——提高了处理的性能，不再需要遍历表" class="headerlink" title="意向锁的价值——提高了处理的性能，不再需要遍历表"></a>意向锁的价值——提高了处理的性能，不再需要遍历表</h4><p>​    意向锁的存在价值在于在定位到特定的行所持有的锁之前，<strong>提供一种更粗粒度的锁，可以大大节约引擎对于锁的定位和处理的性能。因为在存储引擎内部，锁是由一块独立的数据结构维护的，锁的数量直接决定了内存的消耗和并发性能。</strong></p>
+<p>​    例如，事务A对表t的某些行修改（DML通常会产生X锁），需要对t加上意向排它锁IX，在A事务完成之前，B事务需要给表加X锁操作（Flush tables with read lock），此时直接在表级别的意向排它锁就能告诉B事务需要等待（因为表t上有意向锁IX，IX与X互斥）。</p>
+<p>​    <strong>意向锁可以提高性能，因为数据库引擎仅在表级检查意向锁，确定事务是否能安全地获取该表上的锁，而不需要检查表中的每行或每页上的锁以确定事务是否可以锁定整个表。</strong>通过意向锁实现了行锁和表锁共存且满足事务隔离性的要求。</p>
+<p>考虑这个例子：</p>
+<blockquote>
+<p><strong>事务A锁住了表中的一行，让这一行只能读，不能写。</strong></p>
+<p><strong>之后，事务B申请整个表的写锁。</strong></p>
+<p>如果事务B申请成功，那么理论上它就能修改表中的任意一行，这与A持有的行锁是冲突的。</p>
+<p><strong>数据库需要避免这种冲突，就是说要让B的申请被阻塞，直到A释放了行锁。</strong></p>
+<p>数据库要怎么判断这个冲突呢？</p>
+<p>step1：判断表是否已被其他事务用表锁锁表<br>step2：判断表中的每一行是否已被行锁锁住。</p>
+<p>注意step2，这样的判断方法效率实在不高，因为需要遍历整个表。<br>于是就有了意向锁。</p>
+<p>在意向锁存在的情况下，事务A必须先申请表的意向共享锁，成功后再申请一行的行锁。</p>
+<p>在意向锁存在的情况下，上面的判断可以改成</p>
+<p><strong>step1：不变</strong><br><strong>step2：发现表上有意向共享锁，说明表中有些行被共享行锁锁住了，因此，事务B申请表的写锁会被阻塞。</strong></p>
+<p>​    <strong>注意：申请意向锁的动作是数据库完成的，就是说，事务A申请一行的行锁的时候，数据库会自动先开始申请表的意向锁，不需要我们程序员使用代码来申请。</strong>  </p>
+</blockquote>
+<h4 id="查看的命令"><a href="#查看的命令" class="headerlink" title="查看的命令"></a>查看的命令</h4><p>SHOW ENGINE INNODB STATUS——查看当前锁请求的信息</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show engine innodb status\G</span><br><span class="line"><span class="comment">------------</span></span><br><span class="line">TRANSACTIONS</span><br><span class="line"><span class="comment">------------</span></span><br><span class="line">....</span><br><span class="line"><span class="comment">---TRANSACTION 35663, ACTIVE 11 sec</span></span><br><span class="line"><span class="keyword">lock</span> <span class="keyword">struct</span>(s), <span class="keyword">heap</span> <span class="keyword">size</span> <span class="number">1136</span>, <span class="number">1</span> <span class="keyword">row</span> <span class="keyword">lock</span>(s)</span><br><span class="line"><span class="comment">#-- 上面表示2个lock struct，包括1意向锁，以及1个行锁; heap size表示锁结构内存大小 --#</span></span><br><span class="line">MySQL <span class="keyword">thread</span> <span class="keyword">id</span> <span class="number">1520</span>, OS <span class="keyword">thread</span> handle <span class="number">123145316831232</span>, <span class="keyword">query</span> <span class="keyword">id</span> <span class="number">86035</span> localhost root</span><br><span class="line"><span class="keyword">TABLE</span> <span class="keyword">LOCK</span> <span class="keyword">table</span> <span class="string">`test`</span>.<span class="string">`user`</span> trx <span class="keyword">id</span> <span class="number">35663</span> <span class="keyword">lock</span> <span class="keyword">mode</span> IX</span><br><span class="line"><span class="comment">#-- 表锁，表的IX意向锁 --#</span></span><br><span class="line"><span class="built_in">RECORD</span> LOCKS <span class="keyword">space</span> <span class="keyword">id</span> <span class="number">245</span> page <span class="keyword">no</span> <span class="number">3</span> n bits <span class="number">72</span> <span class="keyword">index</span> PRIMARY <span class="keyword">of</span> <span class="keyword">table</span> <span class="string">`test`</span>.<span class="string">`user`</span> trx <span class="keyword">id</span> <span class="number">35663</span> lock_mode X locks rec but <span class="keyword">not</span> gap</span><br><span class="line"><span class="comment">#-- 记录锁，锁发生在表ID为245第3页，并且是对主键加的X锁，锁住的不是一个范围 --#</span></span><br><span class="line"><span class="built_in">Record</span> <span class="keyword">lock</span>, <span class="keyword">heap</span> <span class="keyword">no</span> <span class="number">4</span> <span class="keyword">PHYSICAL</span> <span class="built_in">RECORD</span>: n_fields <span class="number">4</span>; compact format; info bits 0</span><br><span class="line"><span class="comment">#-- heap no 4表示锁住的第3页中的具体物理记录，PHYSICAL RECORD表示是用户插入的 --#</span></span><br><span class="line"><span class="comment">#-- n_fields 4表示锁住的字段数量，包括表字段、回滚指针字段和事务ID字段；如果没有显式定义主键，则还会有ROW_ID字段 --#</span></span><br><span class="line"><span class="comment">#-- compact format表示记录存储格式 --#</span></span><br><span class="line"><span class="comment">#-- info bits 0表示这是一条未被删除的记录，如果是32就表示锁住的是一条被删除的记录（标记为删除，未被purge的记录） --#</span></span><br><span class="line"> 0: len 4; hex 80000003; asc     ;;           <span class="comment">#-- 第一个字段，数据是3（80000003表示3）</span></span><br><span class="line"> 1: len 6; hex 000000003163; asc     1c;;     <span class="comment">#-- TransactionID(事务ID号)</span></span><br><span class="line"> 2: len 7; hex cf000001550110; asc     U  ;;  <span class="comment">#-- Roll Pointer(回滚指针号)</span></span><br><span class="line"> 3: len 1; hex 61; asc a;;                    <span class="comment">#-- 第二个字段，数据是a（十六进制61表示字符a）</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="存在的疑问"><a href="#存在的疑问" class="headerlink" title="存在的疑问"></a>存在的疑问</h4><ul>
+<li><input disabled="" type="checkbox"> locks rec but not gap 代表锁住的是一个索引，不是一个范围</li>
+</ul>
+<h4 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h4><p><a href="https://www.hollischuang.com/archives/914" target="_blank" rel="noopener">https://www.hollischuang.com/archives/914</a></p>
+<p><a href="https://www.zhihu.com/question/51513268/answer/127777478" target="_blank" rel="noopener">https://www.zhihu.com/question/51513268/answer/127777478</a> </p>
+<p><a href="https://www.cnblogs.com/yulibostu/articles/9978590.html" target="_blank" rel="noopener">https://www.cnblogs.com/yulibostu/articles/9978590.html</a></p>
+<p>《Mysql技术内幕》</p>
+<p>​    </p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+<div>
+    
+      <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------本文已完结，撒花~<i class="fa fa-paw"></i>~感谢您的阅读-------------</div>
+    
+</div>
+    
+</div>
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93%E9%94%81/" rel="tag"># 数据库锁</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/06/09/Mysql%E7%9A%84%E4%BA%8B%E5%8A%A1/Mysql%E6%8A%80%E6%9C%AF%E5%86%85%E5%B9%95-%E4%BA%8B%E5%8A%A1%E6%97%A5%E5%BF%97(%E4%B8%80)/" rel="next" title="Mysql中的事务日志——redo日志">
+                <i class="fa fa-chevron-left"></i> Mysql中的事务日志——redo日志
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/06/30/Mysql%E5%BD%93%E4%B8%AD%E7%9A%84%E9%94%81/Mysql%E5%BD%93%E4%B8%AD%E7%9A%84%E9%94%81(%E4%BA%8C)/" rel="prev" title="InnoDB引擎当中的锁 —— 一致性锁定读和一致性非锁定读">
+                InnoDB引擎当中的锁 —— 一致性锁定读和一致性非锁定读 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/images/avatar.png"
+                alt="John Doe" />
+            
+              <p class="site-author-name" itemprop="name">John Doe</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%20%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-name">categories</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/KeepHot" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github-alt"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://weibo.com/u/6076021248" target="_blank" title="微博">
+                      
+                        <i class="fa fa-fw fa-weibo"></i>微博</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.zhihu.com/people/liu-quan-7-71/activities" target="_blank" title="知乎">
+                      
+                        <i class="fa fa-fw fa-angellist"></i>知乎</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:billy9h3@163.com" target="_blank" title="E-mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友链
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://www.hollischuang.com/" title="Hollis" target="_blank">Hollis</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://www.iocoder.cn/?csdn" title="芋道源码" target="_blank">芋道源码</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://ifeve.com/" title="并发编程网" target="_blank">并发编程网</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://tech.meituan.com/" title="美团技术团队" target="_blank">美团技术团队</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://cmsblogs.com/" title="Java技术驿站" target="_blank">Java技术驿站</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://colobu.com/" title="鸟窝" target="_blank">鸟窝</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://coolshell.cn/" title="酷壳" target="_blank">酷壳</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#关于数据库锁的基本概述"><span class="nav-number">1.</span> <span class="nav-text">关于数据库锁的基本概述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#InnoDB锁所支持的锁"><span class="nav-number">2.</span> <span class="nav-text">InnoDB锁所支持的锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#行锁给索引加锁"><span class="nav-number">3.</span> <span class="nav-text">行锁给索引加锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#lock和latch"><span class="nav-number">4.</span> <span class="nav-text">lock和latch</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#两种类型的行级锁"><span class="nav-number">5.</span> <span class="nav-text">两种类型的行级锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#InnoDB支持多粒度锁定"><span class="nav-number">6.</span> <span class="nav-text">InnoDB支持多粒度锁定</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#多粒度锁定的两种意向锁"><span class="nav-number">7.</span> <span class="nav-text">多粒度锁定的两种意向锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#意向锁的价值——提高了处理的性能，不再需要遍历表"><span class="nav-number">8.</span> <span class="nav-text">意向锁的价值——提高了处理的性能，不再需要遍历表</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查看的命令"><span class="nav-number">9.</span> <span class="nav-text">查看的命令</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#存在的疑问"><span class="nav-number">10.</span> <span class="nav-text">存在的疑问</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#参考资料"><span class="nav-number">11.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">John Doe</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

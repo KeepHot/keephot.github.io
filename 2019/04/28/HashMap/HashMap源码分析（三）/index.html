@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="HashMap,HashCode," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&lt;Excerpt in index | 首页摘要&gt;  ​    本文主要讲解了 JDK 下的HashMap的部分源码，对前两篇文章作出了一定的总结，另外对常见的问题，比如hashcode计算，2次幂，初始化容量，多线程死循环等做出了解析。原文作者为Carson_Ho，为了方便阅读对内容顺序做出了部分调整和改动，原文地址为https:&#x2F;&#x2F;blog.csdn.net&#x2F;carson_ho&#x2F;a">
+<meta property="og:type" content="article">
+<meta property="og:title" content="(转载)HashMap的源码分析（三）">
+<meta property="og:url" content="http://yoursite.com/2019/04/28/HashMap/HashMap%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E4%B8%89%EF%BC%89/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="&lt;Excerpt in index | 首页摘要&gt;  ​    本文主要讲解了 JDK 下的HashMap的部分源码，对前两篇文章作出了一定的总结，另外对常见的问题，比如hashcode计算，2次幂，初始化容量，多线程死循环等做出了解析。原文作者为Carson_Ho，为了方便阅读对内容顺序做出了部分调整和改动，原文地址为https:&#x2F;&#x2F;blog.csdn.net&#x2F;carson_ho&#x2F;a">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS1jZDUzMTk5YzQ2MjNlZWZhLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS04NjJkYWQ4ZmQxMDAxMjc5LnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS03NTcxMWFiYjE5YTY4ZTI0LnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS0xNDc5ZmEzMGI4NmQyZjZiLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS0zNzVkMjcyYjdjNDFjMDlhLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS1lNjJkZWIzY2EzMDU1ZGQxLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="og:image" content="https://pic2.zhimg.com/80/8e8203c1b51be6446cda4026eaaccf19_hd.png">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS1kMThlZTA2OTdhMWExYjUzLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS0wNDY1ODc5M2JhZTFlZDkwLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS0yMGQzOTYzNjRiOTY4NzEzLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/6fuT3emWI5KibEZjooeDKHDUcsfgdnZwianeo0AaEEvEGRFFfYIVVRkadL8C10FonQSY9mmJha3wlRO1y8ic3lPJA/640?tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS0zMThiNmUxNzg0MTkwNjViLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS0yMzUzNjU4NGFjNTkwNzgzLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS1jZTVhYTIyMjdmMjY5NDEwLmpwZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS04NzQ4ODY3ZDIwODViNDgxLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS00OTg5ZTliNWUxYjNlZjZkLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="og:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS1kMjhlYTE5Zjg0YTEzOTRmLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+<meta property="article:published_time" content="2019-04-27T16:00:00.000Z">
+<meta property="article:modified_time" content="2019-07-06T11:57:56.110Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="HashMap">
+<meta property="article:tag" content="HashCode">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS1jZDUzMTk5YzQ2MjNlZWZhLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/04/28/HashMap/HashMap源码分析（三）/"/>
+
+
+
+
+
+  <title>(转载)HashMap的源码分析（三） | Hexo</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Hexo</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/%20" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags%20" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            Tags
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories%20" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            Categories
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/%20" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/28/HashMap/HashMap%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E4%B8%89%EF%BC%89/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.png">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">(转载)HashMap的源码分析（三）</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-04-28T00:00:00+08:00">
+                2019-04-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/JDK%E6%BA%90%E7%A0%81/" itemprop="url" rel="index">
+                    <span itemprop="name">JDK源码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+            <div class="post-wordcount">
+              
+                
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-file-word-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Words count in article&#58;</span>
+                
+                <span title="Words count in article ">
+                   字
+                </span>
+              
+
+              
+                <span class="post-meta-divider">|</span>
+              
+
+              
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-clock-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Reading time &asymp;</span>
+                
+                <span title="Reading time">
+                   分钟
+                </span>
+              
+            </div>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&lt;Excerpt in index | 首页摘要&gt; </p>
+<p>​    本文主要讲解了 JDK 下的<strong>HashMap</strong>的部分源码，<strong>对前两篇文章作出了一定的总结，另外对常见的问题，比如hashcode计算，2次幂，初始化容量，多线程死循环等做出了解析</strong>。<strong>原文作者为Carson_Ho</strong>，为了方便阅读对内容顺序做出了部分调整和改动，<strong>原文地址为<a href="https://blog.csdn.net/carson_ho/article/details/79373026" target="_blank" rel="noopener">https://blog.csdn.net/carson_ho/article/details/79373026</a></strong>。再次对原作者表示感谢，写出了这么优秀的文章！</p>
+<a id="more"></a>
+<p>&lt;The rest of contents | 余下全文&gt;</p>
+<h3 id="主要数据结构"><a href="#主要数据结构" class="headerlink" title="主要数据结构"></a>主要数据结构</h3><p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS1jZDUzMTk5YzQ2MjNlZWZhLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt=""></p>
+<h3 id="添加-amp-查询数据流程"><a href="#添加-amp-查询数据流程" class="headerlink" title="添加 &amp; 查询数据流程"></a>添加 &amp; 查询数据流程</h3><p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS04NjJkYWQ4ZmQxMDAxMjc5LnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt=""></p>
+<h3 id="扩容机制"><a href="#扩容机制" class="headerlink" title="扩容机制"></a>扩容机制</h3><p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS03NTcxMWFiYjE5YTY4ZTI0LnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt=""></p>
+<h3 id="JDK1-7与1-8的区别"><a href="#JDK1-7与1-8的区别" class="headerlink" title="JDK1.7与1.8的区别"></a>JDK1.7与1.8的区别</h3><h4 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h4><p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS0xNDc5ZmEzMGI4NmQyZjZiLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt=""></p>
+<h4 id="获取数据"><a href="#获取数据" class="headerlink" title="获取数据"></a>获取数据</h4><p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS0zNzVkMjcyYjdjNDFjMDlhLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt=""></p>
+<h4 id="扩容机制-1"><a href="#扩容机制-1" class="headerlink" title="扩容机制"></a>扩容机制</h4><p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS1lNjJkZWIzY2EzMDU1ZGQxLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt=""></p>
+<h3 id="常见问题解析"><a href="#常见问题解析" class="headerlink" title="常见问题解析"></a>常见问题解析</h3><h4 id="HashMap的hashcode计算？"><a href="#HashMap的hashcode计算？" class="headerlink" title="HashMap的hashcode计算？"></a>HashMap的hashcode计算？</h4><p>​    Hash算法的本质上就只有三步：<strong>取key的hashCode值、高16位与低16位进行异或、哈希码 与运算(数组长度-1）</strong></p>
+<p><img src="https://pic2.zhimg.com/80/8e8203c1b51be6446cda4026eaaccf19_hd.png" alt=""></p>
+<h4 id="为什么不直接采用经过hashCode（）处理的哈希码-作为-存储数组table的下标位置？"><a href="#为什么不直接采用经过hashCode（）处理的哈希码-作为-存储数组table的下标位置？" class="headerlink" title="为什么不直接采用经过hashCode（）处理的哈希码 作为 存储数组table的下标位置？"></a>为什么不直接采用经过hashCode（）处理的哈希码 作为 存储数组table的下标位置？</h4><p>​    容易出现 哈希码 与 数组大小范围不匹配的情况，即 计算出来的哈希码可能 不在数组大小范围内，从而导致无法匹配存储位置。<img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS1kMThlZTA2OTdhMWExYjUzLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt=""></p>
+<p>为了解决 “哈希码与数组大小范围不匹配” 的问题，<code>HashMap</code>给出了解决方案：<strong>哈希码 与运算（&amp;） （数组长度-1）</strong></p>
+<h4 id="为什么采用-哈希码-与运算-amp-（数组长度-1）-计算数组下标"><a href="#为什么采用-哈希码-与运算-amp-（数组长度-1）-计算数组下标" class="headerlink" title="为什么采用 哈希码 与运算(&amp;) （数组长度-1） 计算数组下标"></a>为什么采用 哈希码 与运算(&amp;) （数组长度-1） 计算数组下标</h4><p>根据HashMap的容量大小（数组长度），按需取 哈希码一定数量的低位 作为存储的数组下标位置，从而 解决 “哈希码与数组大小范围不匹配” 的问题<img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS0wNDY1ODc5M2JhZTFlZDkwLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt=""></p>
+<h4 id="为什么在计算数组下标前，需对哈希码进行二次处理：扰动处理？"><a href="#为什么在计算数组下标前，需对哈希码进行二次处理：扰动处理？" class="headerlink" title="为什么在计算数组下标前，需对哈希码进行二次处理：扰动处理？"></a>为什么在计算数组下标前，需对哈希码进行二次处理：扰动处理？</h4><p><strong>混合原始哈希码的高位和低位，以此来加大低位的随机性</strong>，使得分布更均匀，从而提高对应数组存储下标位置的随机性 &amp; 均匀性，最终减少Hash冲突<img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS0yMGQzOTYzNjRiOTY4NzEzLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt=""></p>
+<h4 id="HashMap-为什么使用-amp-与运算代替模运算？"><a href="#HashMap-为什么使用-amp-与运算代替模运算？" class="headerlink" title="HashMap 为什么使用 &amp; 与运算代替模运算？"></a>HashMap 为什么使用 &amp; 与运算代替模运算？</h4><ol>
+<li>当length总是2的n次方时，h&amp; (length-1)运算等价于对length取模，也就是h%length，但是&amp;比%具有更高的效率,也因此数组的长度为2的n次方。</li>
+<li>位运算(&amp;)效率要比代替取模运算(%)高很多，主要原因是位运算直接对内存数据进行操作，不需要转成十进制，因此处理速度非常快。</li>
+</ol>
+<h4 id="HashMap-初始化容量最好是多少？"><a href="#HashMap-初始化容量最好是多少？" class="headerlink" title="HashMap 初始化容量最好是多少？"></a>HashMap 初始化容量最好是多少？</h4><p>​    如果我们没有设置初始容量大小，随着元素的不断增加，HashMap会发生多次扩容，而HashMap中的扩容机制决定了每次扩容都需要重建hash表，是非常影响性能的。</p>
+<p>​    默认情况下，当我们设置HashMap的初始化容量时，实际上HashMap会采用第一个大于该数值的2的幂作为初始化容量，容量的设置最好如下。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/6fuT3emWI5KibEZjooeDKHDUcsfgdnZwianeo0AaEEvEGRFFfYIVVRkadL8C10FonQSY9mmJha3wlRO1y8ic3lPJA/640?tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt=""></p>
+<h4 id="为什么-HashMap-中-String、Integer-这样的包装类适合作为-key-键"><a href="#为什么-HashMap-中-String、Integer-这样的包装类适合作为-key-键" class="headerlink" title="为什么 HashMap 中 String、Integer 这样的包装类适合作为 key 键"></a>为什么 HashMap 中 String、Integer 这样的包装类适合作为 key 键</h4><p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS0zMThiNmUxNzg0MTkwNjViLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt=""></p>
+<h4 id="HashMap-中的-key若-Object类型，-则需实现哪些方法？"><a href="#HashMap-中的-key若-Object类型，-则需实现哪些方法？" class="headerlink" title="HashMap 中的 key若 Object类型， 则需实现哪些方法？"></a>HashMap 中的 <code>key</code>若 <code>Object</code>类型， 则需实现哪些方法？</h4><p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS0yMzUzNjU4NGFjNTkwNzgzLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt=""></p>
+<h4 id="为什么HashMap具备下述特点：键-值（key-value）都允许为空、线程不安全、不保证有序、存储位置随时间变化"><a href="#为什么HashMap具备下述特点：键-值（key-value）都允许为空、线程不安全、不保证有序、存储位置随时间变化" class="headerlink" title="为什么HashMap具备下述特点：键-值（key-value）都允许为空、线程不安全、不保证有序、存储位置随时间变化"></a>为什么HashMap具备下述特点：键-值（key-value）都允许为空、线程不安全、不保证有序、存储位置随时间变化</h4><p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS1jZTVhYTIyMjdmMjY5NDEwLmpwZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt=""></p>
+<h4 id="为什么JDK1-7下多线程下容易出现resize（）死循环？"><a href="#为什么JDK1-7下多线程下容易出现resize（）死循环？" class="headerlink" title="为什么JDK1.7下多线程下容易出现resize（）死循环？"></a>为什么JDK1.7下多线程下容易出现<code>resize（）</code>死循环？</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 源码分析：resize(2 * table.length)</span></span><br><span class="line"><span class="comment">   * 作用：当容量不足时（容量 &gt; 阈值），则扩容（扩到2倍）</span></span><br><span class="line"><span class="comment">   */</span> </span><br><span class="line">   <span class="function"><span class="keyword">void</span> <span class="title">resize</span><span class="params">(<span class="keyword">int</span> newCapacity)</span> </span>&#123;  </span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 1. 保存旧数组（old table） </span></span><br><span class="line">    Entry[] oldTable = table;  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. 保存旧容量（old capacity ），即数组长度</span></span><br><span class="line">    <span class="keyword">int</span> oldCapacity = oldTable.length; </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3. 若旧容量已经是系统默认最大容量了，那么将阈值设置成整型的最大值，退出    </span></span><br><span class="line">    <span class="keyword">if</span> (oldCapacity == MAXIMUM_CAPACITY) &#123;  </span><br><span class="line">        threshold = Integer.MAX_VALUE;  </span><br><span class="line">        <span class="keyword">return</span>;  </span><br><span class="line">    &#125;  </span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 4. 根据新容量（2倍容量）新建1个数组，即新table  </span></span><br><span class="line">    Entry[] newTable = <span class="keyword">new</span> Entry[newCapacity];  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 5. （重点分析）将旧数组上的数据（键值对）转移到新table中，从而完成扩容 -&gt;&gt;分析1.1 </span></span><br><span class="line">    transfer(newTable); </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 6. 新数组table引用到HashMap的table属性上</span></span><br><span class="line">    table = newTable;  </span><br><span class="line"></span><br><span class="line">    <span class="comment">// 7. 重新设置阈值  </span></span><br><span class="line">    threshold = (<span class="keyword">int</span>)(newCapacity * loadFactor); </span><br><span class="line">&#125; </span><br><span class="line"></span><br><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 分析1.1：transfer(newTable); </span></span><br><span class="line"><span class="comment">   * 作用：将旧数组上的数据（键值对）转移到新table中，从而完成扩容</span></span><br><span class="line"><span class="comment">   * 过程：按旧链表的正序遍历链表、在新链表的头部依次插入</span></span><br><span class="line"><span class="comment">   */</span> </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">transfer</span><span class="params">(Entry[] newTable)</span> </span>&#123;</span><br><span class="line">      <span class="comment">// 1. src引用了旧数组</span></span><br><span class="line">      Entry[] src = table; </span><br><span class="line"></span><br><span class="line">      <span class="comment">// 2. 获取新数组的大小 = 获取新容量大小                 </span></span><br><span class="line">      <span class="keyword">int</span> newCapacity = newTable.length;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 3. 通过遍历 旧数组，将旧数组上的数据（键值对）转移到新数组中</span></span><br><span class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; src.length; j++) &#123; </span><br><span class="line">          <span class="comment">// 3.1 取得旧数组的每个元素  </span></span><br><span class="line">          Entry&lt;K,V&gt; e = src[j];           </span><br><span class="line">          <span class="keyword">if</span> (e != <span class="keyword">null</span>) &#123;</span><br><span class="line">              <span class="comment">// 3.2 释放旧数组的对象引用（for循环后，旧数组不再引用任何对象）</span></span><br><span class="line">              src[j] = <span class="keyword">null</span>; </span><br><span class="line"></span><br><span class="line">              <span class="keyword">do</span> &#123; </span><br><span class="line">                  <span class="comment">// 3.3 遍历 以该数组元素为首 的链表</span></span><br><span class="line">                  <span class="comment">// 注：转移链表时，因是单链表，故要保存下1个结点，否则转移后链表会断开</span></span><br><span class="line">                  Entry&lt;K,V&gt; next = e.next; </span><br><span class="line">                 <span class="comment">// 3.3 重新计算每个元素的存储位置</span></span><br><span class="line">                 <span class="keyword">int</span> i = indexFor(e.hash, newCapacity); </span><br><span class="line">                 <span class="comment">// 3.4 将元素放在数组上：采用单链表的头插入方式 = 在链表头上存放数据 = 将数组位置的原有数据放在后1个指针、将需放入的数据放到数组位置中</span></span><br><span class="line">                 <span class="comment">// 即 扩容后，可能出现逆序：按旧链表的正序遍历链表、在新链表的头部依次插入</span></span><br><span class="line">                 e.next = newTable[i]; </span><br><span class="line">                 newTable[i] = e;  </span><br><span class="line">                 <span class="comment">// 访问下1个Entry链上的元素，如此不断循环，直到遍历完该链表上的所有节点</span></span><br><span class="line">                 e = next;             </span><br><span class="line">             &#125; <span class="keyword">while</span> (e != <span class="keyword">null</span>);</span><br><span class="line">             <span class="comment">// 如此不断循环，直到遍历完数组上的所有数据元素</span></span><br><span class="line">         &#125;</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<p>从上面可看出：在扩容<code>resize（）</code>过程中，在将旧数组上的数据 转移到 新数组上时，<strong>转移数据操作 = 按旧链表的正序遍历链表、在新链表的头部依次插入</strong>，即在转移数据、扩容后，容易出现<strong>链表逆序的情况</strong></p>
+<blockquote>
+<p>设重新计算存储位置后不变，即扩容前 = 1-&gt;2-&gt;3，扩容后 = 3-&gt;2-&gt;1</p>
+</blockquote>
+<ul>
+<li>此时若（多线程）并发执行 <code>put（）</code>操作，一旦出现扩容情况，则 <strong>容易出现 环形链表</strong>，从而在获取数据、遍历链表时 形成死循环（<code>Infinite Loop</code>），即 死锁的状态，具体请看下图：</li>
+</ul>
+<p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS04NzQ4ODY3ZDIwODViNDgxLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt=""></p>
+<p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS00OTg5ZTliNWUxYjNlZjZkLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt="    "></p>
+<p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3VwbG9hZC1pbWFnZXMuamlhbnNodS5pby91cGxvYWRfaW1hZ2VzLzk0NDM2NS1kMjhlYTE5Zjg0YTEzOTRmLnBuZz9pbWFnZU1vZ3IyL2F1dG8tb3JpZW50L3N0cmlwJTdDaW1hZ2VWaWV3Mi8yL3cvMTI0MA" alt=""></p>
+<p>注：由于 <code>JDK 1.8</code> 转移数据操作 = <strong>按旧链表的正序遍历链表、在新链表的尾部依次插入</strong>，所以不会出现链表 <strong>逆序、倒置</strong>的情况，故不容易出现环形链表的情况。</p>
+<h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><p><a href="https://blog.csdn.net/carson_ho/article/details/79373026" target="_blank" rel="noopener">https://blog.csdn.net/carson_ho/article/details/79373026</a>       </p>
+<p><a href="https://www.cnblogs.com/yibutian/p/9619696.html" target="_blank" rel="noopener">https://www.cnblogs.com/yibutian/p/9619696.html</a></p>
+<p><a href="https://mp.weixin.qq.com/s?__biz=MzI3NzE0NjcwMg==&amp;mid=2650121359&amp;idx=1&amp;sn=c63d62be1a36db675c62e341044f10e0&amp;chksm=f36bb9aec41c30b8b369428db1286d3de9bc04675057cde49632f3ba50db2d0a69451d6ec080&amp;mpshare=1&amp;scene=1&amp;srcid=0529kU8fMyKTUrpKDwaLMJc6#rd" target="_blank" rel="noopener">https://mp.weixin.qq.com/s?__biz=MzI3NzE0NjcwMg==&amp;mid=2650121359&amp;idx=1&amp;sn=c63d62be1a36db675c62e341044f10e0&amp;chksm=f36bb9aec41c30b8b369428db1286d3de9bc04675057cde49632f3ba50db2d0a69451d6ec080&amp;mpshare=1&amp;scene=1&amp;srcid=0529kU8fMyKTUrpKDwaLMJc6#rd</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+<div>
+    
+      <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------本文已完结，撒花~<i class="fa fa-paw"></i>~感谢您的阅读-------------</div>
+    
+</div>
+    
+</div>
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/HashMap/" rel="tag"># HashMap</a>
+          
+            <a href="/tags/HashCode/" rel="tag"># HashCode</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/04/18/HashMap/HashMap%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E4%BA%8C%EF%BC%89/" rel="next" title="(转载)HashMap的源码分析（二）">
+                <i class="fa fa-chevron-left"></i> (转载)HashMap的源码分析（二）
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/04/29/HashMap/HashMap%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E5%9B%9B%EF%BC%89/" rel="prev" title="(转载)HashMap的源码分析（四）">
+                (转载)HashMap的源码分析（四） <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image"
+                src="/images/avatar.png"
+                alt="John Doe" />
+            
+              <p class="site-author-name" itemprop="name">John Doe</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%20%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-name">categories</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">tags</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/KeepHot" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github-alt"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://weibo.com/u/6076021248" target="_blank" title="微博">
+                      
+                        <i class="fa fa-fw fa-weibo"></i>微博</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.zhihu.com/people/liu-quan-7-71/activities" target="_blank" title="知乎">
+                      
+                        <i class="fa fa-fw fa-angellist"></i>知乎</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:billy9h3@163.com" target="_blank" title="E-mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友链
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://www.hollischuang.com/" title="Hollis" target="_blank">Hollis</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://www.iocoder.cn/?csdn" title="芋道源码" target="_blank">芋道源码</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://ifeve.com/" title="并发编程网" target="_blank">并发编程网</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://tech.meituan.com/" title="美团技术团队" target="_blank">美团技术团队</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://cmsblogs.com/" title="Java技术驿站" target="_blank">Java技术驿站</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://colobu.com/" title="鸟窝" target="_blank">鸟窝</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://coolshell.cn/" title="酷壳" target="_blank">酷壳</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#主要数据结构"><span class="nav-number">1.</span> <span class="nav-text">主要数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#添加-amp-查询数据流程"><span class="nav-number">2.</span> <span class="nav-text">添加 &amp; 查询数据流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#扩容机制"><span class="nav-number">3.</span> <span class="nav-text">扩容机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#JDK1-7与1-8的区别"><span class="nav-number">4.</span> <span class="nav-text">JDK1.7与1.8的区别</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#数据结构"><span class="nav-number">4.1.</span> <span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#获取数据"><span class="nav-number">4.2.</span> <span class="nav-text">获取数据</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#扩容机制-1"><span class="nav-number">4.3.</span> <span class="nav-text">扩容机制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#常见问题解析"><span class="nav-number">5.</span> <span class="nav-text">常见问题解析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#HashMap的hashcode计算？"><span class="nav-number">5.1.</span> <span class="nav-text">HashMap的hashcode计算？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么不直接采用经过hashCode（）处理的哈希码-作为-存储数组table的下标位置？"><span class="nav-number">5.2.</span> <span class="nav-text">为什么不直接采用经过hashCode（）处理的哈希码 作为 存储数组table的下标位置？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么采用-哈希码-与运算-amp-（数组长度-1）-计算数组下标"><span class="nav-number">5.3.</span> <span class="nav-text">为什么采用 哈希码 与运算(&amp;) （数组长度-1） 计算数组下标</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么在计算数组下标前，需对哈希码进行二次处理：扰动处理？"><span class="nav-number">5.4.</span> <span class="nav-text">为什么在计算数组下标前，需对哈希码进行二次处理：扰动处理？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HashMap-为什么使用-amp-与运算代替模运算？"><span class="nav-number">5.5.</span> <span class="nav-text">HashMap 为什么使用 &amp; 与运算代替模运算？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HashMap-初始化容量最好是多少？"><span class="nav-number">5.6.</span> <span class="nav-text">HashMap 初始化容量最好是多少？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么-HashMap-中-String、Integer-这样的包装类适合作为-key-键"><span class="nav-number">5.7.</span> <span class="nav-text">为什么 HashMap 中 String、Integer 这样的包装类适合作为 key 键</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#HashMap-中的-key若-Object类型，-则需实现哪些方法？"><span class="nav-number">5.8.</span> <span class="nav-text">HashMap 中的 key若 Object类型， 则需实现哪些方法？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么HashMap具备下述特点：键-值（key-value）都允许为空、线程不安全、不保证有序、存储位置随时间变化"><span class="nav-number">5.9.</span> <span class="nav-text">为什么HashMap具备下述特点：键-值（key-value）都允许为空、线程不安全、不保证有序、存储位置随时间变化</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么JDK1-7下多线程下容易出现resize（）死循环？"><span class="nav-number">5.10.</span> <span class="nav-text">为什么JDK1.7下多线程下容易出现resize（）死循环？</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#参考资料"><span class="nav-number">6.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">John Doe</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
